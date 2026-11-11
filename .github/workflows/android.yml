@@ -1,0 +1,146 @@
+name: Android APK
+
+# Каждый push в main проверяет код (анализ и тесты).
+# Установочный APK собирается по кнопке: Actions -> Android APK -> Run workflow.
+# Готовый файл появляется в Releases, версия "android-latest".
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: "Название под значком на телефоне (пусто: из pubspec)"
+        required: false
+        default: ""
+      apk_name:
+        description: "Имя файла APK без .apk (пусто: vaygo_forms)"
+        required: false
+        default: ""
+      allow_debug_key:
+        description: "Тестовая сборка без постоянного ключа. Не публикуется. Не ставить поверх рабочей версии."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Имя приложения и подпись из app/pubspec.yaml
+        run: |
+          echo "APP_ID=$(grep -m1 '^name:' app/pubspec.yaml | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "APP_LABEL=$(grep -m1 '^description:' app/pubspec.yaml | sed 's/^description: *"\(.*\)"$/\1/')" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Проект вокруг кода приложения
+        run: |
+          mkdir /tmp/scaffold && cd /tmp/scaffold
+          flutter create --platforms=android --org com.somon --project-name "$APP_ID" --empty .
+          rm -rf lib test pubspec.yaml analysis_options.yaml
+          cp -r "$GITHUB_WORKSPACE/app/lib" "$GITHUB_WORKSPACE/app/test" "$GITHUB_WORKSPACE/app/pubspec.yaml" "$GITHUB_WORKSPACE/app/analysis_options.yaml" "$GITHUB_WORKSPACE/app/assets" .
+      - working-directory: /tmp/scaffold
+        run: |
+          flutter pub get
+          # ошибки останавливают сборку, замечания по стилю нет
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter test
+
+  apk:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Имя приложения и подпись из app/pubspec.yaml
+        run: |
+          echo "APP_ID=$(grep -m1 '^name:' app/pubspec.yaml | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "APP_LABEL=$(grep -m1 '^description:' app/pubspec.yaml | sed 's/^description: *"\(.*\)"$/\1/')" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Android-проект вокруг кода приложения
+        run: |
+          mkdir /tmp/scaffold && cd /tmp/scaffold
+          flutter create --platforms=android --org com.somon --project-name "$APP_ID" --empty .
+          rm -rf lib test pubspec.yaml analysis_options.yaml
+          cp -r "$GITHUB_WORKSPACE/app/lib" "$GITHUB_WORKSPACE/app/pubspec.yaml" "$GITHUB_WORKSPACE/app/assets" .
+          # название на русском под значком, только вертикальный экран
+          sed -i 's|android:label="[^"]*"|android:label="'"$APP_LABEL"'"|; s|<activity|<activity android:screenOrientation="portrait"|' android/app/src/main/AndroidManifest.xml
+      - name: Постоянный ключ подписи (из секретов репозитория)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ALLOW_DEBUG: ${{ inputs.allow_debug_key }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "SIGNED=permanent" >> "$GITHUB_ENV"
+            S=/tmp/scaffold/android/app/build.gradle.kts
+            sed -i 's|signingConfig = signingConfigs.getByName("debug")|signingConfig = signingConfigs.create("fixed") { storeFile = file(System.getenv("ANDROID_KEYSTORE_FILE")); storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD"); keyAlias = System.getenv("ANDROID_KEY_ALIAS"); keyPassword = System.getenv("ANDROID_KEY_PASSWORD") }|' "$S"
+            grep -q 'create("fixed")' "$S" || { echo "::error::Не удалось подключить ключ в $S"; exit 1; }
+          elif [ "$ALLOW_DEBUG" = "true" ]; then
+            echo "SIGNED=debug" >> "$GITHUB_ENV"
+            echo "::warning::Тестовая сборка с временным ключом. Она не публикуется."
+          else
+            echo "::error::Постоянного ключа подписи ещё нет. Сначала запустите Create signing key. Без него обновление не встанет поверх старой версии, и анкеты на телефоне пропадут."
+            exit 1
+          fi
+      - name: Имя файла и название под значком
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          APK_NAME: ${{ inputs.apk_name }}
+        run: |
+          label=$(printf '%s' "$APP_NAME" | tr -d '"<>&\\|/')
+          if [ -n "$label" ]; then sed -i "s|android:label=\"[^\"]*\"|android:label=\"$label\"|" /tmp/scaffold/android/app/src/main/AndroidManifest.xml; fi
+          file=$(printf '%s' "$APK_NAME" | tr -cd 'A-Za-z0-9._-')
+          echo "APK_FILE=${file:-$APP_ID}.apk" >> "$GITHUB_ENV"
+      - name: Сборка
+        working-directory: /tmp/scaffold
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter pub get
+          flutter build apk --release --build-number "${{ github.run_number }}"
+      - name: Имя файла
+        run: cp /tmp/scaffold/build/app/outputs/flutter-apk/app-release.apk "$APK_FILE"
+      - name: Тестовая сборка (только как файл запуска)
+        if: ${{ env.SIGNED == 'debug' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-test-build
+          path: ${{ env.APK_FILE }}
+      - name: Публикация в Releases
+        if: ${{ env.SIGNED == 'permanent' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # убирает и черновик от прошлого запуска (черновик не виден по ссылке)
+          for id in $(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate -q '.[] | select(.tag_name=="android-latest") | .id'); do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id" || true
+          done
+          gh release delete android-latest --cleanup-tag --yes || true
+          gh release create android-latest "$APK_FILE" \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "$APP_LABEL (Android)" \
+            --notes "Установка на телефон: разрешите установку из этого источника. Подписано постоянным ключом: ставьте поверх старой версии, удалять не нужно."
+          for id in $(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate -q '.[] | select(.tag_name=="android-latest" and .draft==true) | .id'); do
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -F draft=false
+          done
