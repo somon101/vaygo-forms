@@ -86,8 +86,26 @@ class _FormFillScreenState extends State<FormFillScreen> {
     await _repo.saveForm(_rec);
   }
 
+  /// Адрес электронной почты, если указан, должен быть похож на адрес.
+  bool get _emailsOk {
+    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
+    for (final s in _t.sections) {
+      for (final q in s.questions) {
+        if (!q.email) continue;
+        final x = _s(q.key).trim();
+        if (x.isNotEmpty && !re.hasMatch(x)) return false;
+      }
+    }
+    return true;
+  }
+
   Future<void> _save() async {
     if (_title.isEmpty || _busy) return;
+    if (!_emailsOk) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Проверьте электронную почту: адрес указан неверно')));
+      return;
+    }
     setState(() => _busy = true);
     try {
       _rec.done = true;
@@ -122,7 +140,8 @@ class _FormFillScreenState extends State<FormFillScreen> {
       TextEditingController? controller,
       ValueChanged<String>? onChanged,
       int minLines = 1,
-      int maxLines = 3}) {
+      int maxLines = 3,
+      bool email = false}) {
     final border = OutlineInputBorder(
         borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: p.line));
     return TextField(
@@ -130,7 +149,10 @@ class _FormFillScreenState extends State<FormFillScreen> {
       onChanged: onChanged,
       minLines: minLines,
       maxLines: maxLines,
-      textCapitalization: TextCapitalization.sentences,
+      textCapitalization:
+          email ? TextCapitalization.none : TextCapitalization.sentences,
+      keyboardType: email ? TextInputType.emailAddress : null,
+      autocorrect: !email,
       style: fts(p, size: 15, w: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hint,
@@ -185,6 +207,7 @@ class _FormFillScreenState extends State<FormFillScreen> {
               controller: _c(q.key, _s(q.key)),
               minLines: long ? 3 : 1,
               maxLines: long ? 8 : 3,
+              email: q.email,
               onChanged: (s) => setState(() => _v[q.key] = s)),
         ]);
       case QType.one:

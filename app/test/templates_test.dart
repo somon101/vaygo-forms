@@ -13,6 +13,7 @@ void main() {
       ];
       expect(keys.toSet().length, keys.length, reason: 'повтор ключа в ${t.id}');
       expect(templateById(t.id), isNotNull);
+      expect(keys.contains('email'), isTrue, reason: 'нет поля почты в ${t.id}');
     }
   });
 

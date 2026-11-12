@@ -11,16 +11,21 @@ class FormQuestion {
   final String? extraLabel; // для one: поле «Условия и стоимость» после выбора
   final List<String> rows; // yesNo, yesNoComment
   final List<String> columns; // grid
+  final bool email; // поле электронной почты: своя клавиатура и проверка
 
   const FormQuestion._(this.key, this.label, this.type,
       {this.hint,
       this.options = const [],
       this.extraLabel,
       this.rows = const [],
-      this.columns = const []});
+      this.columns = const [],
+      this.email = false});
 
   const FormQuestion.text(String key, String label, {String? hint})
       : this._(key, label, QType.text, hint: hint);
+  /// Электронная почта для уведомлений: нужна при подключении партнёра.
+  const FormQuestion.email(String key, String label, {String? hint})
+      : this._(key, label, QType.text, hint: hint, email: true);
   const FormQuestion.longText(String key, String label, {String? hint})
       : this._(key, label, QType.longText, hint: hint);
   const FormQuestion.one(String key, String label, List<String> options,
@@ -116,6 +121,8 @@ const groceryForm = FormTemplate(
       FormQuestion.text('addr', 'Адрес торговой точки'),
       FormQuestion.text('boss', 'ФИО руководителя'),
       FormQuestion.text('phone', 'Телефон для связи'),
+      FormQuestion.email('email', 'Электронная почта для уведомлений',
+          hint: 'name@example.com'),
       FormQuestion.text('points', 'Количество торговых точек'),
       FormQuestion.text('hours', 'Режим работы'),
     ]),
@@ -278,6 +285,8 @@ const hotelForm = FormTemplate(
       ]),
     ]),
     FormSection('Контакты для работы', [
+      FormQuestion.email('email', 'Электронная почта для уведомлений',
+          hint: 'name@example.com'),
       FormQuestion.text('c1', 'Основной контакт',
           hint: 'ФИО, должность, телефон, WhatsApp, email'),
       FormQuestion.text('c2', 'Контакт по бронированиям',
