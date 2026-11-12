@@ -79,7 +79,39 @@ class FormTemplate {
 
   int get questionCount =>
       sections.fold(0, (n, s) => n + s.questions.length);
+
+  /// Гарантирует поле электронной почты: если в шаблоне его нет, оно
+  /// добавляется первым вопросом первого раздела. Так у любой будущей анкеты
+  /// есть почта для уведомлений при подключении партнёра.
+  FormTemplate withEmailField() {
+    final has = sections.any((s) => s.questions.any((q) => q.email));
+    if (has || sections.isEmpty) return this;
+    final first = sections.first;
+    return FormTemplate(
+      id: id,
+      name: name,
+      subtitle: subtitle,
+      docTitle: docTitle,
+      docSubtitle: docSubtitle,
+      titleKeys: titleKeys,
+      intro: intro,
+      footnote: footnote,
+      prefill: prefill,
+      resultKey: resultKey,
+      signatureLine: signatureLine,
+      sections: [
+        FormSection(first.title, [emailQuestion, ...first.questions],
+            note: first.note),
+        ...sections.skip(1),
+      ],
+    );
+  }
 }
+
+/// Стандартное поле электронной почты для уведомлений (есть в каждой анкете).
+const emailQuestion = FormQuestion.email(
+    'email', 'Электронная почта для уведомлений',
+    hint: 'name@example.com');
 
 /// Отвечен ли вопрос (для счётчика «Заполнено N из M»).
 bool isAnswered(FormQuestion q, Map<String, dynamic> v) {
@@ -331,7 +363,11 @@ const hotelForm = FormTemplate(
   ],
 );
 
-const formTemplates = <FormTemplate>[groceryForm, hotelForm];
+/// Все типы анкет. Чтобы добавить новый тип: описать шаблон выше и дописать
+/// его сюда. Поле электронной почты добавится само, если его нет в шаблоне.
+final formTemplates = <FormTemplate>[groceryForm, hotelForm]
+    .map((t) => t.withEmailField())
+    .toList();
 
 FormTemplate? templateById(String id) {
   for (final t in formTemplates) {

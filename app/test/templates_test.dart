@@ -13,8 +13,31 @@ void main() {
       ];
       expect(keys.toSet().length, keys.length, reason: 'повтор ключа в ${t.id}');
       expect(templateById(t.id), isNotNull);
-      expect(keys.contains('email'), isTrue, reason: 'нет поля почты в ${t.id}');
+      final emails = [
+        for (final s in t.sections) for (final q in s.questions) if (q.email) q,
+      ];
+      expect(emails.length, 1, reason: 'почта должна быть ровно одна в ${t.id}');
     }
+  });
+
+  test('в новый шаблон без почты поле добавляется само', () {
+    const bare = FormTemplate(
+      id: 'x',
+      name: 'Тест',
+      subtitle: '',
+      docTitle: 'Т',
+      docSubtitle: '',
+      titleKeys: ['a'],
+      sections: [
+        FormSection('Раздел', [FormQuestion.text('a', 'Название')]),
+      ],
+    );
+    expect(bare.sections.first.questions.any((q) => q.email), isFalse);
+    final fixed = bare.withEmailField();
+    expect(fixed.sections.first.questions.first.email, isTrue);
+    expect(fixed.sections.first.questions.length, 2);
+    // повторный вызов ничего не дублирует
+    expect(fixed.withEmailField().sections.first.questions.length, 2);
   });
 
   test('запись анкеты сохраняется и читается без потерь', () {
