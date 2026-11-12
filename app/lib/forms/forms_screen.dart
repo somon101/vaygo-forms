@@ -7,6 +7,7 @@ import '../data/form_record.dart';
 import '../data/store.dart';
 import 'form_actions.dart';
 import 'form_fill_screen.dart';
+import 'logo.dart';
 import 'pal.dart';
 import 'templates.dart';
 
@@ -227,13 +228,19 @@ class _FormsScreenState extends State<FormsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
               child: Row(children: [
+                const LogoMark(size: 44),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text('Анкеты',
-                      style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1,
-                          color: p.ink)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Анкеты',
+                        style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1,
+                            height: 1.05,
+                            color: p.ink)),
+                    Text('VAYGO', style: fts(p, size: 12, w: FontWeight.w600, color: p.mut)),
+                  ]),
                 ),
                 FAddBtn('Анкета', _pickType),
               ]),

@@ -174,6 +174,8 @@ class FormPdf {
       theme: pw.ThemeData.withFont(base: regular, bold: bold),
     );
     final date = DateFormat('d MMMM yyyy', 'ru').format(DateTime.now());
+    final logo = pw.MemoryImage(
+        (await rootBundle.load('assets/icon/logo_mark.png')).buffer.asUint8List());
 
     doc.addPage(
       pw.MultiPage(
@@ -187,10 +189,21 @@ class FormPdf {
           ],
         ),
         build: (ctx) => [
-          pw.Text('VAYGO',
-              style: pw.TextStyle(
-                  fontSize: 22, fontWeight: pw.FontWeight.bold, color: _navy, letterSpacing: 2)),
-          pw.SizedBox(height: 6),
+          pw.Row(children: [
+            pw.Container(
+              width: 30,
+              height: 30,
+              padding: const pw.EdgeInsets.all(5),
+              decoration: pw.BoxDecoration(
+                  color: _navy, borderRadius: pw.BorderRadius.circular(8)),
+              child: pw.Image(logo),
+            ),
+            pw.SizedBox(width: 10),
+            pw.Text('VAYGO',
+                style: pw.TextStyle(
+                    fontSize: 22, fontWeight: pw.FontWeight.bold, color: _navy, letterSpacing: 2)),
+          ]),
+          pw.SizedBox(height: 8),
           _t(t.docTitle, size: 15, bold: true),
           pw.SizedBox(height: 2),
           _t(t.docSubtitle, size: 9.5, color: _grey),

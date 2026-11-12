@@ -22,9 +22,20 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
+
+# Значок приложения: тёмный фон Midnight и знак VAYGO (две стрелки вперёд).
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#0B0B0D"
+  adaptive_icon_foreground: assets/icon/icon_foreground.png
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   assets:
     - assets/fonts/DejaVuSans.ttf
     - assets/fonts/DejaVuSans-Bold.ttf
+    - assets/icon/logo_mark.png

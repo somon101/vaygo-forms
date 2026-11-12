@@ -118,6 +118,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           flutter pub get
+          dart run flutter_launcher_icons
           flutter build apk --release --build-number "${{ github.run_number }}"
       - name: Имя файла
         run: cp /tmp/scaffold/build/app/outputs/flutter-apk/app-release.apk "$APK_FILE"
