@@ -1,0 +1,78 @@
+name: Windows build
+
+# Версия для компьютера (Windows). Запуск вручную: Actions -> Windows build -> Run workflow.
+# Готовый архив появляется в Releases, версия "windows-latest".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Имя приложения из app/pubspec.yaml
+        run: |
+          echo "APP_ID=$(grep -m1 '^name:' app/pubspec.yaml | awk '{print $2}')" >> "$GITHUB_ENV"
+          echo "APP_LABEL=$(grep -m1 '^description:' app/pubspec.yaml | sed 's/^description: *"\(.*\)"$/\1/')" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Проект Windows вокруг кода приложения
+        run: |
+          mkdir "$RUNNER_TEMP/scaffold" && cd "$RUNNER_TEMP/scaffold"
+          flutter create --platforms=windows --org com.somon --project-name "$APP_ID" --empty .
+          rm -rf lib test pubspec.yaml analysis_options.yaml
+          cp -r "$GITHUB_WORKSPACE/app/lib" "$GITHUB_WORKSPACE/app/pubspec.yaml" "$GITHUB_WORKSPACE/app/assets" .
+          # название окна (латиницей, чтобы не зависеть от кодировки исходников)
+          sed -i 's/L"'"$APP_ID"'"/L"VAYGO Forms"/' windows/runner/main.cpp || true
+          # значок для Windows из того же знака VAYGO
+          cat > flutter_launcher_icons-windows.yaml <<'YAML'
+          flutter_launcher_icons:
+            android: false
+            ios: false
+            windows:
+              generate: true
+              image_path: "assets/icon/icon.png"
+              icon_size: 256
+          YAML
+      - name: Сборка
+        working-directory: ${{ runner.temp }}/scaffold
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons -f flutter_launcher_icons-windows.yaml
+          flutter build windows --release
+      - name: Архив
+        shell: pwsh
+        run: |
+          $rel = Join-Path $env:RUNNER_TEMP 'scaffold\build\windows\x64\runner\Release'
+          @"
+          Анкеты VAYGO для Windows
+
+          1. Распакуйте архив в любую папку (не запускайте из архива).
+          2. Запустите файл $($env:APP_ID).exe.
+          3. Анкеты сохраняются на этом компьютере. PDF кладутся в «Документы\Анкеты VAYGO».
+
+          Если Windows пишет про отсутствие MSVCP140.dll или VCRUNTIME140.dll,
+          установите «Microsoft Visual C++ Redistributable (x64)» с сайта Microsoft.
+          "@ | Set-Content -Encoding UTF8 (Join-Path $rel 'ПРОЧТИ.txt')
+          Compress-Archive -Path "$rel\*" -DestinationPath (Join-Path $env:GITHUB_WORKSPACE 'vaygo-forms-windows.zip') -Force
+      - name: Публикация в Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-latest --cleanup-tag --yes || true
+          gh release create windows-latest vaygo-forms-windows.zip \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "$APP_LABEL (Windows)" \
+            --notes "Версия для компьютера. Распакуйте архив и запустите $APP_ID.exe."

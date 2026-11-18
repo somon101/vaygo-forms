@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 
 import 'pal.dart';
@@ -23,6 +26,8 @@ Future<void> showFormPreview(
   );
 }
 
+bool get _isDesktop => Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+
 class FormPreviewScreen extends StatelessWidget {
   final String title;
   final Uint8List bytes;
@@ -33,6 +38,34 @@ class FormPreviewScreen extends StatelessWidget {
     required this.bytes,
     required this.fileName,
   });
+
+  /// На компьютере вместо «Поделиться»: сохранить PDF в папку «Документы/Анкеты VAYGO»
+  /// и показать файл в проводнике.
+  Future<void> _saveToDocuments(BuildContext context) async {
+    try {
+      final dir = Directory(
+          p.join((await getApplicationDocumentsDirectory()).path, 'Анкеты VAYGO'));
+      await dir.create(recursive: true);
+      final path = p.join(dir.path, fileName);
+      await File(path).writeAsBytes(bytes, flush: true);
+      if (Platform.isWindows) {
+        await Process.start('explorer.exe', ['/select,', path]);
+      } else if (Platform.isMacOS) {
+        await Process.start('open', ['-R', path]);
+      } else {
+        await Process.start('xdg-open', [dir.path]);
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Сохранено: $path')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Не удалось сохранить файл')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,9 +113,11 @@ class FormPreviewScreen extends StatelessWidget {
               top: false,
               minimum: const EdgeInsets.only(bottom: 16),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                FPill('Отправить',
-                    icon: Icons.ios_share_rounded,
-                    onTap: () => Printing.sharePdf(bytes: bytes, filename: fileName)),
+                FPill(_isDesktop ? 'Сохранить PDF' : 'Отправить',
+                    icon: _isDesktop ? Icons.save_alt_rounded : Icons.ios_share_rounded,
+                    onTap: () => _isDesktop
+                        ? _saveToDocuments(context)
+                        : Printing.sharePdf(bytes: bytes, filename: fileName)),
                 const SizedBox(height: 8),
                 FPill('Печать',
                     icon: Icons.print_outlined,
