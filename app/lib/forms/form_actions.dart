@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
 
 import '../data/form_record.dart';
 import 'form_pdf.dart';
+import 'form_preview.dart';
 import 'pal.dart';
 import 'templates.dart';
 
@@ -54,16 +54,17 @@ Future<void> showFormActionsWindow(BuildContext context, FormTemplate t, FormRec
           ]),
         ),
         const SizedBox(height: 14),
-        FPill('Отправить',
-            icon: Icons.ios_share_rounded,
-            onTap: () async => Printing.sharePdf(
-                bytes: await formPdfBytes(t, r), filename: fileName)),
-        const SizedBox(height: 8),
-        FPill('Печать',
-            icon: Icons.print_outlined,
-            quiet: true,
-            onTap: () async => Printing.layoutPdf(
-                onLayout: (_) => formPdfBytes(t, r), name: fileName)),
+        // Отправка и печать только из просмотра: сначала видно, что уйдёт.
+        FPill('Просмотр и отправка',
+            icon: Icons.visibility_outlined,
+            onTap: () async {
+              final bytes = await formPdfBytes(t, r);
+              if (!ctx.mounted) return;
+              await showFormPreview(ctx,
+                  title: r.title.isEmpty ? t.name : r.title,
+                  bytes: bytes,
+                  fileName: fileName);
+            }),
       ]),
     );
   });
