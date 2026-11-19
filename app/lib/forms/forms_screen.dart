@@ -83,7 +83,7 @@ class _FormsScreenState extends State<FormsScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(children: [
-            _icon(p, t.id == 'hotel' ? Icons.hotel_outlined : Icons.shopping_cart_outlined),
+            _icon(p, _typeIcon(t.id)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -98,6 +98,12 @@ class _FormsScreenState extends State<FormsScreen> {
       ),
     );
   }
+
+  IconData _typeIcon(String typeId) => switch (typeId) {
+        'hotel' => Icons.hotel_outlined,
+        'pharmacy' => Icons.local_pharmacy_outlined,
+        _ => Icons.shopping_cart_outlined,
+      };
 
   Widget _icon(FPal p, IconData i) => Container(
         width: 44,
@@ -157,7 +163,7 @@ class _FormsScreenState extends State<FormsScreen> {
           decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20), border: Border.all(color: p.line)),
           child: Row(children: [
-            _icon(p, r.type == 'hotel' ? Icons.hotel_outlined : Icons.shopping_cart_outlined),
+            _icon(p, _typeIcon(r.type)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
