@@ -102,6 +102,7 @@ class _FormsScreenState extends State<FormsScreen> {
   IconData _typeIcon(String typeId) => switch (typeId) {
         'hotel' => Icons.hotel_outlined,
         'pharmacy' => Icons.local_pharmacy_outlined,
+        'flower' => Icons.local_florist_outlined,
         _ => Icons.shopping_cart_outlined,
       };
 

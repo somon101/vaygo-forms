@@ -5,7 +5,7 @@ import 'package:vaygo_forms/forms/templates.dart';
 void main() {
   test('шаблоны анкет заполнены и ключи полей не повторяются', () {
     expect(formTemplates.map((t) => t.id).toList(),
-        ['grocery', 'hotel', 'pharmacy']);
+        ['grocery', 'hotel', 'pharmacy', 'flower']);
     for (final t in formTemplates) {
       expect(t.sections, isNotEmpty);
       expect(t.questionCount, greaterThan(10));

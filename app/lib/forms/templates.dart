@@ -504,9 +504,150 @@ const pharmacyForm = FormTemplate(
   ],
 );
 
+// ------------------------------------------------------------------
+// Анкета цветочного магазина
+// ------------------------------------------------------------------
+
+const flowerForm = FormTemplate(
+  id: 'flower',
+  name: 'Цветочный магазин',
+  subtitle: 'Подключение цветочного магазина или салона',
+  docTitle: 'АНКЕТА ЦВЕТОЧНОГО МАГАЗИНА',
+  docSubtitle: 'Для подключения магазина к приложению VAYGO',
+  intro:
+      'Заполните доступные сведения; отсутствующие данные можно уточнить с менеджером.',
+  footnote:
+      'Анкета используется для подготовки подключения. Комиссия, сроки выплат, порядок возвратов и иные обязательства определяются отдельным соглашением сторон.',
+  titleKeys: ['name', 'legal'],
+  prefill: {'name': 'name', 'addr': 'address', 'phone': 'phone'},
+  sections: [
+    FormSection('Сведения о магазине', [
+      FormQuestion.text('name', 'Торговое название магазина'),
+      FormQuestion.text('legal', 'Юридическое наименование / Ф. И. О.'),
+      FormQuestion.one('form', 'Форма деятельности',
+          ['ООО', 'ИП', 'Самозанятый', 'Физическое лицо']),
+      FormQuestion.text('inn', 'ИНН'),
+      FormQuestion.text('ogrn', 'ОГРН / ОГРНИП (если есть)'),
+      FormQuestion.text('addr', 'Фактический адрес магазина'),
+      FormQuestion.text('points', 'Количество торговых точек'),
+      FormQuestion.text('contact', 'Контактное лицо и должность'),
+      FormQuestion.text('phone', 'Контактный телефон / WhatsApp'),
+      FormQuestion.email('email', 'Электронная почта для уведомлений',
+          hint: 'name@example.com'),
+      FormQuestion.text('site', 'Сайт / социальные сети'),
+    ]),
+    FormSection('График и возможности', [
+      FormQuestion.text('hours', 'Режим работы по дням недели'),
+      FormQuestion.one('r24', 'Работа круглосуточно', ['Да', 'Нет']),
+      FormQuestion.one('preorder', 'Приём заказов на будущую дату / время',
+          ['Да', 'Нет']),
+      FormQuestion.one('urgent', 'Возможен срочный заказ', ['Да', 'Нет']),
+      FormQuestion.text('assemblemin', 'Минимальное время сборки букета',
+          hint: 'в минутах'),
+      FormQuestion.text('holidays', 'Работа в праздничные дни / особенности'),
+    ]),
+    FormSection('Ассортимент', [
+      FormQuestion.many('cats', 'Категории товаров (отметьте все подходящие)', [
+        'Готовые букеты', 'Авторские букеты', 'Цветы поштучно',
+        'Композиции в корзинах', 'Цветы в коробках', 'Свадебная флористика',
+        'Комнатные растения', 'Искусственные цветы', 'Воздушные шары',
+        'Мягкие игрушки', 'Открытки', 'Подарочные наборы',
+      ]),
+      FormQuestion.text('othercats', 'Другие категории товаров'),
+      FormQuestion.text('skus', 'Приблизительное число позиций'),
+      FormQuestion.text('minorder', 'Минимальная сумма заказа', hint: '₽'),
+      FormQuestion.text('avgcheck', 'Средний чек', hint: '₽'),
+      FormQuestion.one('custom', 'Сборка букета по индивидуальному запросу',
+          ['Да', 'Нет']),
+      FormQuestion.one('colorchoice', 'Выбор клиентом цвета / количества цветов',
+          ['Да', 'Нет']),
+      FormQuestion.text('extras', 'Дополнительные услуги (упаковка и др.)'),
+    ]),
+    FormSection('Цены и обработка заказов', [
+      FormQuestion.one('seasonal', 'Цены меняются по сезону / к праздникам',
+          ['Да', 'Нет']),
+      FormQuestion.text('updfreq', 'Как часто обновляется ассортимент'),
+      FormQuestion.text('priceresp', 'Ответственный за цены и наличие в VAYGO'),
+      FormQuestion.one('replace',
+          'Замена цветов при отсутствии согласовывается с клиентом', ['Да', 'Нет']),
+      FormQuestion.one('photoprev', 'Фото готового букета клиенту до отправки',
+          ['Да', 'Нет']),
+      FormQuestion.one('cardtext', 'Принимаете ли заказы с текстом открытки',
+          ['Да', 'Нет']),
+      FormQuestion.text('confirmmin', 'Максимальное время подтверждения заказа',
+          hint: 'в минутах'),
+      FormQuestion.text('confirmphone', 'Телефон для оперативного подтверждения заказов'),
+    ]),
+    FormSection('Получение заказа и доставка', [
+      FormQuestion.many('pickup', 'Способы получения заказа', [
+        'Самовывоз', 'Собственная доставка', 'Курьер VAYGO (после согласования)',
+      ]),
+      FormQuestion.text('pickaddr', 'Адрес / точка самовывоза'),
+      FormQuestion.text('zone', 'Зона собственной доставки'),
+      FormQuestion.text('delcost', 'Стоимость собственной доставки', hint: '₽'),
+      FormQuestion.one('freedel', 'Бесплатная доставка от суммы заказа',
+          ['Да', 'Нет']),
+      FormQuestion.text('freefrom', 'При наличии: от какой суммы', hint: '₽'),
+      FormQuestion.text('deltime', 'Обычное время доставки', hint: 'в минутах'),
+      FormQuestion.one('timedel', 'Доставка к указанному времени', ['Да', 'Нет']),
+      FormQuestion.one('anon', 'Анонимная доставка (без имени отправителя)',
+          ['Да', 'Нет']),
+      FormQuestion.one('surprise', 'Доставка-сюрприз получателю', ['Да', 'Нет']),
+      FormQuestion.longText('limits', 'Ограничения при доставке / особые условия'),
+    ]),
+    FormSection('Каталог и учёт товаров', [
+      FormQuestion.one('catalog', 'Есть действующий электронный каталог',
+          ['Да', 'Нет']),
+      FormQuestion.many('catformat', 'Формат товарного каталога',
+          ['Excel', '1С', 'МойСклад', 'Другое']),
+      FormQuestion.text('system', 'Название системы учёта, если используется'),
+      FormQuestion.one('photos', 'Есть качественные фотографии товаров',
+          ['Да', 'Частично', 'Нет']),
+      FormQuestion.text('photoswho', 'Кто предоставит фото, названия и описания'),
+      FormQuestion.text('catupd', 'Кто будет обновлять каталог в VAYGO'),
+      FormQuestion.one('photouse',
+          'Разрешаете использование предоставленных фото и описаний в карточках товаров VAYGO',
+          ['Да', 'Требует согласования']),
+    ]),
+    FormSection('Расчёты и коммерческие условия', [
+      FormQuestion.one('payfreq', 'Предпочтительная периодичность выплат', [
+        'Ежедневно', 'Раз в неделю', 'Раз в две недели', 'Раз в месяц',
+        'По согласованию',
+      ]),
+      FormQuestion.text('bank', 'Банк и получатель платежей'),
+      FormQuestion.text('account', 'Расчётный счёт / реквизиты (можно приложить)'),
+      FormQuestion.text('tax', 'Применяемая система налогообложения'),
+      FormQuestion.text('vat', 'Ставка НДС / основание без НДС'),
+      FormQuestion.text('fee', 'Предполагаемая комиссия VAYGO',
+          hint: '% (согласовывается)'),
+      FormQuestion.one('refund',
+          'Согласование отмены / возврата через ответственного', ['Да', 'Нет']),
+      FormQuestion.text('refundresp', 'Ответственный по вопросам возвратов'),
+    ]),
+    FormSection('Организация подключения', [
+      FormQuestion.text('techcontact', 'Контакт для технического подключения'),
+      FormQuestion.text('notifyphone', 'Номер для рабочих уведомлений'),
+      FormQuestion.one('training', 'Понадобится обучение работе с заказами',
+          ['Да', 'Нет']),
+      FormQuestion.one('catready', 'Готовность каталога',
+          ['Готов', 'Нужна помощь', 'В работе']),
+      FormQuestion.text('startdate', 'Желаемая дата начала приёма заказов'),
+      FormQuestion.longText('comment', 'Комментарий / особые пожелания'),
+      FormQuestion.many('handed', 'Что передано менеджеру VAYGO', [
+        'Реквизиты', 'Меню / прайс', 'Фотографии', 'График работы',
+        'Контакты ответственного',
+      ]),
+      FormQuestion.text('filldate', 'Дата заполнения'),
+      FormQuestion.text('manager', 'Менеджер VAYGO'),
+      FormQuestion.text('sign', 'Подпись представителя магазина'),
+    ]),
+  ],
+);
+
 /// Все типы анкет. Чтобы добавить новый тип: описать шаблон выше и дописать
 /// его сюда. Поле электронной почты добавится само, если его нет в шаблоне.
-final formTemplates = <FormTemplate>[groceryForm, hotelForm, pharmacyForm]
+final formTemplates =
+    <FormTemplate>[groceryForm, hotelForm, pharmacyForm, flowerForm]
     .map((t) => t.withEmailField())
     .toList();
 
